@@ -26,6 +26,9 @@ const int STEP_TIME = 200;   // how long each LED stays on (ms)
 
 
 // Part IV – samples array
+// An array of 10 readings. It is empty for now: takeSamples() fills it.
+const int NUM_SAMPLES = 10;
+int samples[NUM_SAMPLES];
 
 
 // ----- Helper functions ----------------------------------------------
@@ -50,6 +53,8 @@ void showLevel(int level)
 
 // Part IV – takeSamples(), printSamples(), getAverage(),
 //           getMinimum(), getMaximum()
+// takeSamples() – fill the array: element 0, then element 1, … up to element 9.
+
 
 
 // Part V – sendReport()
@@ -77,7 +82,6 @@ void setup()
     pinMode(LED_PINS[i], OUTPUT);  // the element number (index) is i
   }
 
-
   Serial.println("Lab 11 – Arrays, Loops and JSON");
 }
 
@@ -103,13 +107,32 @@ void loop()
     digitalWrite(LED_PINS[i], LOW);
   }
   // Show the levels 0, 1, 2, 3 and 4, half a second each.
-  for (int level = 0; level <= NUM_LEDS; level++)
+  for (int level = 4; level <= NUM_LEDS; level++)
   {
     showLevel(level);
     delay(500);
   }
 
   // Part IV – Wait for the button, then measure (while loops)
+  Serial.println("Press the button to measure...");
+
+  // A while loop repeats AS LONG AS its condition is true
+  // (Common Commands: "While Loop").
+  // A released button reads HIGH, so this loop waits here until the button is pressed.
+  while (digitalRead(BUTTON_PIN) == HIGH)
+  {
+    delay(10);
+  }
+  delay(50);     // ignore switch bounce (like the debounce in Lab 10)
+
+  Serial.println("Button pressed!");
+
+  // Now wait here until the button is released, so one press = one measurement.
+  while (digitalRead(BUTTON_PIN) == LOW)
+  {
+    delay(10);
+  }
+  delay(50);     // ignore switch bounce when the button is released
 
 
 }
