@@ -122,6 +122,34 @@ int getMaximum()
 
 
 // Part V – sendReport()
+// sendReport() – put all the results in ONE JSON object and send it.
+void sendReport(float average, int minimum, int maximum, int level)
+{
+  // A JsonDocument holds JSON data in memory
+  // (Common Commands: "Create a JSON Document").
+  JsonDocument report;
+
+  // Add key : value pairs (Common Commands: "Add a Key and Value").
+  report["device"] = "esp32-lab11";    // text
+  report["average"] = average;         // number with decimals
+  report["min"] = minimum;             // whole number
+  report["max"] = maximum;        // whole number
+  report["LEDs"] = level;          // the key must be called level
+
+  // Create a JSON array called "samples"
+  // (Common Commands: "Add a JSON Array"),
+  // then copy every element of the C++ array into it.
+  JsonArray data = report["samples"].to<JsonArray>();
+  for (int i = 0; i < NUM_SAMPLES; i++)
+  {
+    data.add(samples[i]);           // add one value at the end
+  }
+
+  // Turn the document into text and send it, one value per line
+  // (Common Commands: "Send JSON").
+  serializeJsonPretty(report, Serial);
+  Serial.println();
+}
 
 
 // Part IV – runMeasurement()
@@ -139,16 +167,89 @@ void runMeasurement()
   int level = map((int)average, 0, 4096, 0, NUM_LEDS + 1);
   digitalRead(level);                 // show the level on the bar graph
 
-  printSamples();
-  Serial.print("Average: ");   Serial.println(average);
-  Serial.print("Minimum: ");   Serial.println(minimum);
-  Serial.print("Maximum: ");   Serial.println(maximum);
-  Serial.print("Level: ");     Serial.println(level);
+  sendReport(average, minimum, maximum, level);   // send everything as JSON
 }
 
 
 
 // Part V – handleCommand() and checkSerial()
+// handleCommand() – read one JSON command and do what it asks.
+void handleCommand(String text)
+{
+  JsonDocument command;
+
+  // Read the JSON text into the document (Common Commands: "Read JSON").
+  DeserializationError error = ____________________(command, text);
+
+  // If the text is not valid JSON, print the reason and stop here.
+  if (error)
+  {
+    Serial.print("JSON error: ");
+    Serial.println(error.c_str());
+    return;
+  }
+
+  // {"leds":[1,0,1,0]} – is there a key "leds" whose value is an array?
+  // (Common Commands: "Check a Value's Type")
+  if (command["leds"].is<JsonArray>())
+  {
+    JsonArray leds = command["leds"];
+    for (int i = 0; i < NUM_LEDS; i++)
+    {
+      // Element i of the JSON array (a missing element gives 0).
+      int value = leds[___];
+      digitalWrite(LED_PINS[i], value);  // 1 = on, 0 = off
+    }
+    Serial.println("LEDs updated");
+  }
+
+  // {"level":3} – is there a key "level" whose value is a whole number?
+  if (command["level"].is<______>())
+  {
+    int level = command["level"];
+    showLevel(level);
+    Serial.print("Level set to ");
+    Serial.println(level);
+  }
+
+  // {"cmd":"report"} – read the text of "cmd" ("" if the key is missing)
+  // (Common Commands: "Read a Value").
+  String name = command["cmd"] | "";
+  if (name == "report")
+  {
+    ________________();                  // take a measurement and send the report
+  }
+}
+
+// The characters received so far. It is global, so it keeps its value
+// between two calls of checkSerial().
+String inputLine = "";
+
+// checkSerial() – collect the characters one by one. When Enter arrives,
+// pass the whole line to handleCommand().
+void checkSerial()
+{
+  while (Serial.available() > 0)              // repeat for every character waiting
+  {
+    // Take ONE character (Common Commands: "Read a Character").
+    char c = Serial.__________();
+
+    if (c == '\n' || c == '\r')             // Enter key ('\n' or '\r')
+    {
+      inputLine.trim();                       // remove spaces at both ends
+      if (inputLine.length() > 0)             // ignore an empty line
+      {
+        handleCommand(inputLine);
+      }
+      inputLine = "";                         // start again with an empty line
+    }
+    else
+    {
+      // Add the character at the end (Common Commands: "Add to a String").
+      inputLine += ___;
+    }
+  }
+}
 
 
 void setup()
